@@ -1,7 +1,7 @@
 extern crate num;
 extern crate rust_decimal;
 
-use num::{ToPrimitive, Zero};
+use num::{pow::Pow, ToPrimitive, Zero};
 
 use rust_decimal::{Decimal, RoundingStrategy};
 
@@ -542,6 +542,32 @@ fn it_can_remassign() {
     let mut c = &mut a;
     c %= &b;
     assert_eq!("1", a.to_string());
+}
+
+#[test]
+fn it_can_pow() {
+    fn pow(a: &str, b: &str, c: &str) {
+        let a = Decimal::from_str(a).unwrap();
+        let b = Decimal::from_str(b).unwrap();
+        let result = a.pow(b);
+        assert_eq!(c, result.to_string(), "{}.pow({})", a.to_string(), b.to_string());
+    }
+
+    let tests = &[
+        ("0", "0", "1"),
+        ("1", "0", "1"),
+        ("0", "1", "0"),
+        ("2", "3", "8"),
+        ("-2", "3", "-8"),
+        ("2", "-3", "0.125"),
+        ("-2", "-3", "-0.125"),
+        ("6", "3", "216"),
+        ("0.5", "2", "0.25"),
+        ("0.5", "0.25", "0.840896415"),
+    ];
+    for &(a, b, c) in tests {
+        pow(a, b, c);
+    }
 }
 
 #[test]

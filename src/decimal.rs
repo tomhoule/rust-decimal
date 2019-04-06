@@ -1,6 +1,6 @@
 use crate::Error;
 
-use num::{FromPrimitive, One, ToPrimitive, Zero};
+use num::{FromPrimitive, One, pow::Pow, ToPrimitive, Zero};
 
 use lazy_static::lazy_static;
 
@@ -2741,6 +2741,35 @@ impl Sum for Decimal {
         }
         return sum;
     }
+}
+
+impl Pow<Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn pow(self, rhs: Decimal) -> Self::Output {
+        pow_internal(&self, &rhs)
+    }
+}
+
+fn pow_internal(base: &Decimal, exp: &Decimal) -> Decimal {
+    if exp.is_zero() {
+        return Decimal::one();
+    }
+    if base.is_zero() {
+        return Decimal::zero();
+    }
+
+    let mut negative = false;
+    let base_integer = base.scale() == 0;
+    if base_integer {
+        let even = base.lo & 1 == 0;
+        if !even && base.is_sign_negative() {
+            negative = true;
+        }
+    }
+
+    // TODO
+    Decimal::zero()
 }
 
 #[cfg(test)]
