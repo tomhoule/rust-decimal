@@ -2758,18 +2758,54 @@ fn pow_internal(base: &Decimal, exp: &Decimal) -> Decimal {
     if base.is_zero() {
         return Decimal::zero();
     }
-
-    let mut negative = false;
-    let base_integer = base.scale() == 0;
-    if base_integer {
-        let even = base.lo & 1 == 0;
-        if !even && base.is_sign_negative() {
-            negative = true;
-        }
+    if base.is_one() {
+        return Decimal::one();
+    }
+    if exp.is_one() {
+        return *base;
     }
 
-    // TODO
-    Decimal::zero()
+    let exp_normal = exp.normalize();
+    if exp_normal.scale() == 0 {
+        let mut b = to_u128(base);
+        let mut e = to_u128(&exp_normal);
+        if exp.is_sign_negative() {
+            unimplemented!("to do: negative exponents")
+        } else {
+            let mut res: u128 = 1;
+            while e > 0 {
+                if e & 0x1 > 0 {
+                    res *= b;
+                }
+                b *= b;
+                e /= 2;
+            }
+            // If the result is too big then panic (for now)
+            if res >> 96 > 0 {
+                panic!("Overflow from power function");
+            }
+            from_u128(res, base.is_sign_negative(), 0)
+        }
+    } else {
+        unimplemented!("to do: decimal exponents")
+    }
+}
+
+fn to_u128(d: &Decimal) -> u128 {
+    let mut v: u128 = 0;
+    v |= d.hi as u128;
+    v = v << 32;
+    v |= d.mid as u128;
+    v = v << 32;
+    v |= d.lo as u128;
+    v
+}
+
+fn from_u128(v: u128, is_negative: bool, scale: u32) -> Decimal {
+    let lo = (v as u64 & U32_MASK) as u32;
+    let mid = ((v >> 32) as u64 & U32_MASK) as u32;
+    let hi = ((v >> 64) as u64 & U32_MASK) as u32;
+    Decimal::from_parts(lo, mid, hi, is_negative, scale)
 }
 
 #[cfg(test)]
