@@ -2751,8 +2751,8 @@ impl Pow<Decimal> for Decimal {
     }
 }
 
-fn pow_internal(base: &Decimal, exp: &Decimal) -> Decimal {
-    if exp.is_zero() {
+fn pow_internal(base: &Decimal, exponent: &Decimal) -> Decimal {
+    if exponent.is_zero() {
         return Decimal::one();
     }
     if base.is_zero() {
@@ -2761,33 +2761,47 @@ fn pow_internal(base: &Decimal, exp: &Decimal) -> Decimal {
     if base.is_one() {
         return Decimal::one();
     }
-    if exp.is_one() {
+    if exponent.is_one() {
         return *base;
     }
 
-    let exp_normal = exp.normalize();
-    if exp_normal.scale() == 0 {
-        let mut b = to_u128(base);
-        let mut e = to_u128(&exp_normal);
-        if exp.is_sign_negative() {
-            unimplemented!("to do: negative exponents")
+    let en = exponent.normalize();
+    if en.scale() == 0 {
+        // For negative exponents we change x^-y into x/(x^(y+1)).
+        // This could be potentially optimized in the future.
+        let exp_neg = en.is_sign_negative();
+        let base_neg = base.is_sign_negative();
+        let mut scale = 0;
+        let base_scale = base.scale();
+        let mut e = if exp_neg {
+            to_u128(&en.abs()) + 1
         } else {
-            let mut res: u128 = 1;
-            while e > 0 {
-                if e & 0x1 > 0 {
-                    res *= b;
-                }
-                b *= b;
-                e /= 2;
+            to_u128(&en)
+        };
+        let mut b = to_u128(&base.abs());
+        let mut res: u128 = 1;
+        while e > 0 {
+            if e & 0x1 > 0 {
+                res *= b;
             }
-            // If the result is too big then panic (for now)
-            if res >> 96 > 0 {
-                panic!("Overflow from power function");
-            }
-            from_u128(res, base.is_sign_negative(), 0)
+            b *= b;
+            e /= 2;
+            //scale += base_scale;
         }
+        // If the result is too big then panic (for now)
+        if res >> 96 > 0 {
+            panic!("Overflow from power function");
+        }
+        let mut ret = from_u128(res, base_neg, scale);
+        if exp_neg {
+            ret = base / ret;
+            if base_neg {
+                ret.set_sign(false);
+            }
+        }
+        ret
     } else {
-        unimplemented!("to do: decimal exponents")
+        unimplemented!("decimal exponents")
     }
 }
 
