@@ -1141,6 +1141,7 @@ fn it_converts_from_f64() {
         "0.1234567890123457",
         from_f64(0.12345678901234567890123456789f64).unwrap().to_string()
     );
+    assert_eq!("0.00006927", from_f64(0.00006927f64).unwrap().to_string());
     assert_eq!("0", from_f64(0.00000000000000000000000000001f64).unwrap().to_string());
 
     assert!(from_f64(std::f64::NAN).is_none());
